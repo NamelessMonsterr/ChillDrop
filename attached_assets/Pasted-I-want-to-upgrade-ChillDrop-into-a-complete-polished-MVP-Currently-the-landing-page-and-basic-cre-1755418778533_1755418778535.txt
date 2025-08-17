@@ -1,0 +1,91 @@
+I want to upgrade ChillDrop into a complete, polished MVP. Currently, the landing page and basic create/join room flow are working, but several critical features and design improvements are missing. Please carefully implement the following:
+
+🔹 Functional Features (Missing / Incomplete)
+
+File Upload System
+
+Drag & drop area + “click to upload” option
+
+Support files up to 250MB each with chunked upload to Supabase Storage
+
+Show progress bar, upload speed, and ETA
+
+Allow multiple file uploads at once
+
+File Management
+
+Display uploaded files with filename, size, upload time, and expiry countdown
+
+Add file type preview for images, PDFs, text, and videos
+
+Generate short-lived signed download URLs (15 min expiry) for secure access
+
+Room Expiry & Auto-Cleanup
+
+Ensure files/rooms auto-delete after chosen expiry (1h, 6h, 12h, 24h)
+
+Add Supabase scheduled cleanup function
+
+Password Protection
+
+Passwords must be hashed with bcrypt in the DB (not stored in plain text)
+
+Room access requires password validation if enabled
+
+Chat System
+
+Real-time chat works, but improve with:
+
+Typing indicators
+
+Emoji picker
+
+Ability to send small files or images in chat
+
+🔹 Design & UX Improvements
+
+Landing Page
+
+More unique and professional design (glassmorphism cards, smooth gradient transitions, modern fonts)
+
+Add subtle hover animations on buttons and cards
+
+Replace plain gradient with a dynamic gradient or animated background
+
+Dark/Light Mode
+
+Add a toggle in the navbar to switch themes automatically
+
+Room Page
+
+Redesign layout to look cleaner:
+
+Left side → File upload + file list
+
+Right side → Chat panel
+
+Top → Room info (name, expiry, participant count, share link button, QR code)
+
+Branding
+
+Keep the name ChillDrop, but make the logo more stylish
+
+Improve overall visual hierarchy so it feels like a professional SaaS product, not just a student project
+
+🔹 Stretch Features (Optional if possible)
+
+File search & filter inside room
+
+QR code generation for sharing room links
+
+Simple usage stats (file count, storage used, participants in room)
+
+🛠️ Tech Stack (Keep using)
+
+React + Vite + TailwindCSS
+
+Supabase (DB, Auth, Realtime, Storage)
+
+Framer Motion for smooth animations
+
+⚡ Please implement all missing functionality and update the design to be modern, beautiful, professional, and unique.

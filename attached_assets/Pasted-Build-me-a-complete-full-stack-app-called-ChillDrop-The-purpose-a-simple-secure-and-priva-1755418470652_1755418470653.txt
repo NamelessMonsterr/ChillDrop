@@ -1,0 +1,91 @@
+Build me a complete full-stack app called **ChillDrop**.  
+The purpose: a simple, secure, and private way to share text, files, and chat in temporary rooms.  
+
+## Tech Stack
+- Frontend: React (Vite + TypeScript) + Tailwind CSS + shadcn/ui + Framer Motion  
+- Backend: Supabase (for database, auth, storage, and realtime)  
+- Deployment: Run on Replit and auto-deploy with a live URL  
+- Optional Edge Functions: Supabase edge functions for cleanup  
+
+## Core Features
+1. **Landing Page**
+   - Modern SaaS-style design (gradient background, glassmorphism, smooth animations).
+   - Navigation bar: ChillDrop logo, links (About, Features, Contact), dark/light mode toggle.
+   - Hero section with headline + subtext + CTA buttons: “Create Room” and “Join Room”.
+   - Feature cards with icons (lucide-react): Expiry timers, Password protection, Zero-knowledge encryption, Realtime chat & file sharing.
+   - "How It Works" section (Step 1: Create room → Step 2: Upload files & chat → Step 3: Share link → Step 4: Auto-expire).
+   - Footer with © 2025 ChillDrop, links to Privacy, Terms, Contact.
+
+2. **Create Room**
+   - Form: Room name, expiry (1h, 6h, 12h, 24h), optional password.
+   - Store room in Supabase `rooms` table with bcrypt-hashed password if provided.
+   - Redirect to `/room/:id`.
+
+3. **Join Room**
+   - Button on landing page to join existing room.
+   - Modal with input for Room ID or URL.
+   - If password protected → show password modal and validate against bcrypt hash.
+   - On success → enter `/room/:id`.
+
+4. **Room Page**
+   - Header: Room name, expiry countdown, file count.
+   - **Upload Files** box: drag & drop, max 250MB/file, progress bar, speed/ETA.
+   - Uploads stored in Supabase Storage; metadata saved in `files` table (room_id, filename, size, mimetype, expires_at).
+   - **Files list**: show uploaded files with download buttons.
+   - File downloads use short-lived (15 min) signed URLs from Supabase.
+   - **Chat section**: realtime Supabase channel for messages; auto-scroll, timestamps, sender name.
+   - Expiry countdown visible; when expired, block uploads/chat and show “Room expired”.
+
+5. **Security**
+   - Client-side AES-GCM encryption using Web Crypto API and Web Workers (files encrypted before upload, decrypted after download).
+   - Zero-knowledge architecture: keys never leave the client.
+   - Supabase Row Level Security (RLS) so users can only see their room data.
+   - Passwords stored as bcrypt hashes.
+   - Signed download URLs auto-expire after 15 min.
+   - Supabase Edge Function scheduled to clean up expired files/rooms automatically.
+
+6. **Realtime**
+   - Supabase Realtime used for:
+     - New messages → instant chat sync.
+     - New file uploads → file list auto-updates.
+   - Expiry timer updates live.
+
+## Database Schema
+Rooms:
+- id (uuid, pk)
+- name (text)
+- password_hash (text, nullable)
+- expires_at (timestamptz)
+- created_at (timestamptz default now)
+
+Files:
+- id (uuid, pk)
+- room_id (uuid, fk to rooms, cascade delete)
+- filename (text)
+- file_size (bigint)
+- mime_type (text)
+- storage_path (text)
+- encrypted_key (text, for AES key if needed)
+- expires_at (timestamptz)
+- created_at (timestamptz default now)
+
+Messages:
+- id (uuid, pk)
+- room_id (uuid, fk to rooms, cascade delete)
+- sender_name (text)
+- content (text)
+- created_at (timestamptz default now)
+
+## UI/UX Details
+- Glassmorphism cards with soft shadows.
+- Framer Motion animations (fade-in hero text, slide-in cards, smooth button hover).
+- Responsive for mobile & desktop.
+- Dark/light theme toggle.
+- Accessibility: ARIA roles, keyboard navigation, focus states.
+
+## Deliverables
+- Working code for both frontend and backend.
+- Full folder structure (components, hooks, services).
+- Supabase integration configured (URL + anon key in .env).
+- Cleanup function for expired rooms/files.
+- Ready-to-deploy app running on Replit with a public URL.
