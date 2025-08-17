@@ -48,7 +48,7 @@ export function FileUpload({ roomId }: FileUploadProps) {
         fileSize: file.size,
         mimeType: file.type,
         storagePath,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
       };
 
       const response = await apiRequest("POST", "/api/files", fileData);

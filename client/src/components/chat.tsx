@@ -2,9 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Send, Smile, Paperclip, File } from "lucide-react";
+import { MessageCircle, Send, File, Upload } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile } from "@/lib/supabase";
+import { EmojiPicker } from "@/components/emoji-picker";
+import { FilePicker } from "@/components/file-picker";
 import type { Message, File as FileType } from "@shared/schema";
 
 interface ChatProps {
@@ -18,6 +21,7 @@ interface MessageWithFile extends Message {
 export function Chat({ roomId }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const [senderName, setSenderName] = useState("");
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -100,6 +104,59 @@ export function Chat({ roomId }: ChatProps) {
     });
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+  };
+
+  const handleFileSelect = async (files: File[]) => {
+    setUploadingFiles(files);
+    
+    for (const file of files) {
+      try {
+        // Upload file
+        const fileName = `${Date.now()}-${file.name}`;
+        const storagePath = `${roomId}/${fileName}`;
+        
+        await uploadFile(file, storagePath);
+        
+        // Save file metadata to database
+        const fileData = {
+          roomId,
+          filename: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          storagePath,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        };
+
+        const response = await apiRequest("POST", "/api/files", fileData);
+        const savedFile = await response.json();
+        
+        // Send message with file attachment
+        sendMessageMutation.mutate({
+          content: `📎 ${file.name}`,
+          fileId: savedFile.id,
+        });
+        
+        // Refresh file list
+        queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "files"] });
+        
+        toast({
+          title: "File Uploaded",
+          description: `${file.name} has been shared in chat`,
+        });
+      } catch (error) {
+        toast({
+          title: "Upload Failed",
+          description: `Failed to upload ${file.name}`,
+          variant: "destructive",
+        });
+      }
+    }
+    
+    setUploadingFiles([]);
+  };
+
   if (isLoading) {
     return (
       <div className="glass rounded-2xl p-6 h-96">
@@ -146,7 +203,7 @@ export function Chat({ roomId }: ChatProps) {
                   <span className="font-medium">
                     {isMyMessage(message) ? "You" : message.senderName}
                   </span>
-                  <span className="ml-auto">{formatTime(message.createdAt)}</span>
+                  <span className="ml-auto">{formatTime(message.createdAt.toString())}</span>
                 </div>
                 
                 {message.fileId && message.file && (
@@ -169,6 +226,16 @@ export function Chat({ roomId }: ChatProps) {
         <div ref={messagesEndRef} />
       </div>
       
+      {/* Upload Progress */}
+      {uploadingFiles.length > 0 && (
+        <div className="glass rounded-lg p-3 mb-3">
+          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+            <Upload className="h-4 w-4 animate-pulse" />
+            <span>Uploading {uploadingFiles.length} file{uploadingFiles.length > 1 ? 's' : ''}...</span>
+          </div>
+        </div>
+      )}
+      
       {/* Chat Input */}
       <div className="space-y-3">
         <div className="flex items-center space-x-2">
@@ -182,12 +249,8 @@ export function Chat({ roomId }: ChatProps) {
               className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white p-0"
               data-testid="input-chat-message"
             />
-            <Button variant="ghost" size="icon" className="hover:bg-white/20 rounded transition-all">
-              <Smile className="h-4 w-4 text-gray-500" />
-            </Button>
-            <Button variant="ghost" size="icon" className="hover:bg-white/20 rounded transition-all">
-              <Paperclip className="h-4 w-4 text-gray-500" />
-            </Button>
+            <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            <FilePicker onFileSelect={handleFileSelect} />
           </div>
           <Button
             onClick={handleSendMessage}
