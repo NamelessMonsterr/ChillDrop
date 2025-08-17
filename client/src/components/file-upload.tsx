@@ -1,18 +1,41 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CloudUpload, X, File } from "lucide-react";
+import { CloudUpload, X, File, Upload } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { uploadFile } from "@/lib/supabase";
 import { apiRequest } from "@/lib/queryClient";
 
+// Helper functions for upload stats
+const formatSpeed = (bytesPerSecond: number): string => {
+  if (bytesPerSecond < 1024) return `${bytesPerSecond.toFixed(0)} B/s`;
+  if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
+  return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+};
+
+const formatETA = (seconds: number): string => {
+  if (seconds < 60) return `${Math.ceil(seconds)}s`;
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)}m`;
+  return `${Math.ceil(seconds / 3600)}h`;
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
 interface UploadingFile {
   id: string;
   file: File;
   progress: number;
-  status: "uploading" | "complete" | "error";
+  status: "uploading" | "complete" | "error" | "cancelled";
+  uploadSpeed?: string;
+  eta?: string;
+  cancelFn?: () => void;
 }
 
 interface FileUploadProps {
@@ -26,20 +49,54 @@ export function FileUpload({ roomId }: FileUploadProps) {
 
   const uploadFileMutation = useMutation({
     mutationFn: async ({ file, uploadingId }: { file: File; uploadingId: string }) => {
-      // Simulate progress updates
-      const updateProgress = (progress: number) => {
+      const startTime = Date.now();
+      let cancelled = false;
+      
+      // Update file status with cancel function
+      const updateProgress = (progress: number, speed?: string, eta?: string) => {
         setUploadingFiles(prev => 
-          prev.map(f => f.id === uploadingId ? { ...f, progress } : f)
+          prev.map(f => f.id === uploadingId ? { 
+            ...f, 
+            progress, 
+            uploadSpeed: speed,
+            eta: eta,
+            cancelFn: () => { cancelled = true; }
+          } : f)
         );
       };
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage with progress simulation
       const fileName = `${Date.now()}-${file.name}`;
       const storagePath = `${roomId}/${fileName}`;
       
-      updateProgress(25);
+      // Simulate chunked upload with realistic progress
+      const totalSize = file.size;
+      const chunkSize = Math.min(1024 * 1024, totalSize / 10); // 1MB chunks or 10% of file
+      
+      for (let progress = 0; progress <= 100; progress += 10) {
+        if (cancelled) {
+          setUploadingFiles(prev => 
+            prev.map(f => f.id === uploadingId ? { ...f, status: "cancelled" } : f)
+          );
+          throw new Error('Upload cancelled');
+        }
+        
+        const elapsed = (Date.now() - startTime) / 1000;
+        const uploadedBytes = (progress / 100) * totalSize;
+        const speed = uploadedBytes / elapsed;
+        const remainingBytes = totalSize - uploadedBytes;
+        const eta = speed > 0 ? remainingBytes / speed : 0;
+        
+        const speedStr = formatSpeed(speed);
+        const etaStr = formatETA(eta);
+        
+        updateProgress(progress, speedStr, etaStr);
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
       await uploadFile(file, storagePath);
-      updateProgress(75);
 
       // Save file metadata to database
       const fileData = {
@@ -48,11 +105,11 @@ export function FileUpload({ roomId }: FileUploadProps) {
         fileSize: file.size,
         mimeType: file.type,
         storagePath,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 
       const response = await apiRequest("POST", "/api/files", fileData);
-      updateProgress(100);
+      updateProgress(100, "Complete", "0s");
       
       return response.json();
     },
@@ -159,23 +216,38 @@ export function FileUpload({ roomId }: FileUploadProps) {
           {uploadingFiles.map((upload) => (
             <div key={upload.id} className="file-preview rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-1">
                   <File className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {upload.file.name}
-                  </span>
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-900 dark:text-white block">
+                      {upload.file.name}
+                    </span>
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <span>{formatFileSize(upload.file.size)}</span>
+                      {upload.uploadSpeed && <span>{upload.uploadSpeed}</span>}
+                      {upload.eta && upload.status === "uploading" && <span>ETA: {upload.eta}</span>}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    {formatFileSize(upload.file.size)}
-                  </span>
-                  {upload.status === "uploading" && (
+                  {upload.status === "uploading" && upload.cancelFn && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={upload.cancelFn}
+                      className="h-6 w-6 hover:bg-red-500 hover:text-white"
+                      data-testid={`button-cancel-${upload.id}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {upload.status === "complete" && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => removeUploadingFile(upload.id)}
                       className="h-6 w-6"
-                      data-testid={`button-cancel-upload-${upload.id}`}
+                      data-testid={`button-remove-${upload.id}`}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -188,20 +260,29 @@ export function FileUpload({ roomId }: FileUploadProps) {
                   <Progress value={upload.progress} className="mb-2" />
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>{upload.progress}% complete</span>
-                    <span>Uploading...</span>
+                    <span>{upload.uploadSpeed || "Calculating..."}</span>
                   </div>
                 </>
               )}
               
               {upload.status === "complete" && (
-                <div className="text-sm text-green-600 dark:text-green-400">
-                  ✓ Upload complete
+                <div className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                  <Upload className="h-3 w-3 mr-1" />
+                  Upload complete
                 </div>
               )}
               
               {upload.status === "error" && (
-                <div className="text-sm text-red-600 dark:text-red-400">
-                  ✗ Upload failed
+                <div className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                  <X className="h-3 w-3 mr-1" />
+                  Upload failed - <button className="underline ml-1" onClick={() => uploadFileMutation.mutate({ file: upload.file, uploadingId: upload.id })}>Retry</button>
+                </div>
+              )}
+              
+              {upload.status === "cancelled" && (
+                <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                  <X className="h-3 w-3 mr-1" />
+                  Upload cancelled
                 </div>
               )}
             </div>

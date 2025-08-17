@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { uploadFile } from "@/lib/supabase";
 import { EmojiPicker } from "@/components/emoji-picker";
 import { FilePicker } from "@/components/file-picker";
+import { useWebSocket } from "@/hooks/use-websocket";
 import type { Message, File as FileType } from "@shared/schema";
 
 interface ChatProps {
@@ -21,9 +22,8 @@ interface MessageWithFile extends Message {
 export function Chat({ roomId }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const [senderName, setSenderName] = useState("");
+  const [userId] = useState(() => Math.random().toString(36).substr(2, 9));
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -40,9 +40,17 @@ export function Chat({ roomId }: ChatProps) {
     }
   }, [roomId]);
 
+  // WebSocket hook for real-time features
+  const { isConnected, participantCount, typingUsers, handleTyping, sendTypingStop } = useWebSocket(
+    roomId, 
+    userId, 
+    senderName
+  );
+
   const { data: messages = [], isLoading } = useQuery<MessageWithFile[]>({
     queryKey: ["/api/rooms", roomId, "messages"],
-    refetchInterval: 2000, // Poll for new messages every 2 seconds
+    // Real-time updates via WebSocket, reduce polling frequency
+    refetchInterval: isConnected ? 10000 : 2000,
   });
 
   const sendMessageMutation = useMutation({
@@ -83,31 +91,14 @@ export function Chat({ roomId }: ChatProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
-    
-    // Handle typing indicators
-    if (!isTyping) {
-      setIsTyping(true);
-    }
-    
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      setIsTyping(false);
-    }, 2000);
-    
-    setTypingTimeout(timeout);
+    handleTyping(); // Use WebSocket typing handler
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
-      setIsTyping(false);
-      if (typingTimeout) {
-        clearTimeout(typingTimeout);
-      }
+      sendTypingStop(); // Stop typing indicator
     }
   };
 
@@ -205,8 +196,8 @@ export function Chat({ roomId }: ChatProps) {
           Chat
         </h2>
         <div className="flex items-center text-sm text-gray-500">
-          <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-          Online
+          <div className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+          {isConnected ? `Online${participantCount > 0 ? ` (${participantCount})` : ''}` : 'Connecting...'}
         </div>
       </div>
       
@@ -250,14 +241,19 @@ export function Chat({ roomId }: ChatProps) {
         )}
         
         {/* Typing Indicator */}
-        {isTyping && (
+        {typingUsers.length > 0 && (
           <div className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
             <div className="flex space-x-1">
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
-            <span>Someone is typing...</span>
+            <span>
+              {typingUsers.length === 1 
+                ? `${typingUsers[0]} is typing...`
+                : `${typingUsers.slice(0, -1).join(', ')} and ${typingUsers[typingUsers.length - 1]} are typing...`
+              }
+            </span>
           </div>
         )}
         

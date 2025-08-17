@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertRoomSchema, insertFileSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
+import { wsManager } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Room routes
@@ -53,6 +54,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const fileData = insertFileSchema.parse(req.body);
       const file = await storage.createFile(fileData);
+      
+      // Broadcast file upload to room
+      wsManager.broadcastFileUploaded(fileData.roomId, file);
+      
       res.json(file);
     } catch (error) {
       res.status(400).json({ error: "Invalid file data" });
@@ -85,6 +90,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const messageData = insertMessageSchema.parse(req.body);
       const message = await storage.createMessage(messageData);
+      
+      // Broadcast new message to room
+      wsManager.broadcastNewMessage(messageData.roomId, message);
+      
       res.json(message);
     } catch (error) {
       res.status(400).json({ error: "Invalid message data" });
@@ -112,5 +121,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket server
+  wsManager.initialize(httpServer);
+  
   return httpServer;
 }
