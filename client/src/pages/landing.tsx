@@ -268,13 +268,10 @@ export default function Landing() {
                 <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">
                   Terms
                 </a>
-                <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">
-                  Contact
-                </a>
               </div>
               
               <div className="text-gray-600 dark:text-gray-300">
-                © 2025 ChillDrop. All rights reserved.
+                Made By Hammad
               </div>
             </div>
           </div>

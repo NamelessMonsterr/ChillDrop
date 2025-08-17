@@ -8,6 +8,13 @@ ChillDrop is a full-stack web application that provides secure, temporary file s
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- Updated footer branding to "Made By Hammad" instead of copyright notice
+- Removed Contact link from footer navigation  
+- Enhanced room statistics display with glassmorphism cards
+- Implemented comprehensive feature set including QR codes, bulk downloads, emoji picker, and typing indicators
+
 ## System Architecture
 
 ### Frontend Architecture
