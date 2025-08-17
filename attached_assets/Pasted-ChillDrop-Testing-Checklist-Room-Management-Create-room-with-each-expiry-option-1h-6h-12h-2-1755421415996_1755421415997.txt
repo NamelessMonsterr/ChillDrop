@@ -1,0 +1,70 @@
+ChillDrop Testing Checklist
+🔹 Room Management
+
+ Create room with each expiry option (1h, 6h, 12h, 24h) → verify expiry countdown appears.
+
+ Create room with password → try joining with wrong vs. correct password.
+
+ Join room via direct link and via room ID → both should work.
+
+ Scan QR code → should redirect correctly to the room.
+
+🔹 File Upload & Download
+
+ Upload small files (images, txt, PDFs) → confirm progress bar, ETA, and success state.
+
+ Upload larger files (close to 250MB limit) → confirm chunked upload works.
+
+ Upload multiple files simultaneously → ensure parallel uploads succeed.
+
+ Cancel upload mid-way → verify cancellation works without crashing.
+
+ Check uploaded file list → shows filename, size, time, and expiry countdown.
+
+ Click download → verify signed URL works, and link expires after ~15 minutes.
+
+ Try opening expired file → should fail to download.
+
+🔹 Chat
+
+ Open same room in two browsers → confirm realtime messaging works.
+
+ Check typing indicators appear correctly.
+
+ Send emoji messages → should render properly.
+
+ Share an image/file inside chat → should appear inline and downloadable.
+
+ Chat scrolls to latest message automatically.
+
+🔹 Security
+
+ Verify passwords are hashed in Supabase (bcrypt).
+
+ Inspect network requests → no raw password or encryption keys sent.
+
+ Try downloading with expired signed URL → confirm it denies access.
+
+ Check Supabase RLS policies: only room members can access files/messages.
+
+🔹 Expiry & Cleanup
+
+ Create short-lived room (e.g., 1h) → confirm room + files vanish after expiry.
+
+ Verify cleanup function removes expired items from Supabase storage + DB.
+
+🔹 UI/UX
+
+ Landing page looks polished (hero section, features, timeline).
+
+ Dark/light mode toggle works.
+
+ Responsive design: test on mobile, tablet, desktop.
+
+ Hover animations and smooth transitions appear.
+
+ Accessibility: navigate with keyboard only, check ARIA labels.
+
+🔹 Usage Stats
+
+ Verify file count, total storage, and participant count update in real time.

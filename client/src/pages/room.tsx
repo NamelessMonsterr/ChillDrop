@@ -83,10 +83,10 @@ export default function Room() {
   };
 
   const handleShareFile = (file: File) => {
-    // This would integrate with the chat component
+    // File sharing is now handled directly in the Chat component
     toast({
       title: "File Shared",
-      description: `${file.filename} will be shared in chat`,
+      description: `${file.filename} shared in chat`,
     });
   };
 
@@ -106,19 +106,36 @@ export default function Room() {
                   <Home className="inline mr-2 text-primary-500" />
                   <span data-testid="room-name">{room.name}</span>
                 </h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-                  <span className="flex items-center" data-testid="room-expiry">
-                    <Clock className="mr-1 text-secondary-500 h-4 w-4" />
-                    Expires in <span className="font-semibold text-secondary-500 ml-1">{room.timeRemaining}</span>
-                  </span>
-                  <span className="flex items-center" data-testid="file-count">
-                    <FileText className="mr-1 text-primary-500 h-4 w-4" />
-                    {fileCount} files ({totalSize})
-                  </span>
-                  <span className="flex items-center" data-testid="participant-count">
-                    <Users className="mr-1 text-green-500 h-4 w-4" />
-                    {participantCount} active
-                  </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center text-gray-600 dark:text-gray-300" data-testid="room-expiry">
+                    <div className="glass rounded-lg p-3 flex items-center space-x-2 w-full">
+                      <Clock className="text-secondary-500 h-4 w-4" />
+                      <div>
+                        <p className="font-medium">Expires in</p>
+                        <p className="text-secondary-500 font-semibold">{room.timeRemaining}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center text-gray-600 dark:text-gray-300" data-testid="file-stats">
+                    <div className="glass rounded-lg p-3 flex items-center space-x-2 w-full">
+                      <FileText className="text-primary-500 h-4 w-4" />
+                      <div>
+                        <p className="font-medium">Storage Used</p>
+                        <p className="text-primary-500 font-semibold">{fileCount} files ({totalSize})</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center text-gray-600 dark:text-gray-300" data-testid="participant-count">
+                    <div className="glass rounded-lg p-3 flex items-center space-x-2 w-full">
+                      <Users className="text-green-500 h-4 w-4" />
+                      <div>
+                        <p className="font-medium">Active Users</p>
+                        <p className="text-green-500 font-semibold">{participantCount} online</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               

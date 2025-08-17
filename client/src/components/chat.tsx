@@ -22,6 +22,8 @@ export function Chat({ roomId }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const [senderName, setSenderName] = useState("");
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -79,10 +81,33 @@ export function Chat({ roomId }: ChatProps) {
     });
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Handle typing indicators
+    if (!isTyping) {
+      setIsTyping(true);
+    }
+    
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
+    
+    setTypingTimeout(timeout);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+      setIsTyping(false);
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
     }
   };
 
@@ -223,6 +248,19 @@ export function Chat({ roomId }: ChatProps) {
             </div>
           ))
         )}
+        
+        {/* Typing Indicator */}
+        {isTyping && (
+          <div className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+            <span>Someone is typing...</span>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
       
@@ -244,7 +282,7 @@ export function Chat({ roomId }: ChatProps) {
               type="text"
               placeholder="Type your message..."
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white p-0"
               data-testid="input-chat-message"

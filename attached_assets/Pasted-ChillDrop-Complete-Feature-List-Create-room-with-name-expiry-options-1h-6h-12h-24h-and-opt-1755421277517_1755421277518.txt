@@ -1,0 +1,83 @@
+ChillDrop — Complete Feature List
+
+Create room with name, expiry options (1h, 6h, 12h, 24h), and optional password
+
+Join room using room ID or link with password validation if required
+
+Passwords stored securely using bcrypt hashing
+
+Room info bar showing room name, expiry countdown, participant count, and share options
+
+Room sharing via direct link and QR code generation
+
+Automatic room and file cleanup when expiry is reached
+
+File upload system with drag & drop and click-to-upload support
+
+Chunked uploads supporting files up to 250MB each
+
+Multiple simultaneous uploads with cancel/retry support
+
+Upload progress tracking including percentage, upload speed, and ETA
+
+File management displaying filename, size, upload time, and expiry countdown
+
+File previews for images, PDFs, videos, and text files
+
+Secure downloads with Supabase-signed URLs that expire after 15 minutes
+
+Bulk download option for multiple files
+
+Real-time chat with Supabase Realtime integration
+
+Typing indicators showing when participants are writing messages
+
+Emoji picker for richer conversations
+
+File and image sharing directly in chat
+
+Automatic scroll to the newest message in chat
+
+Usage statistics showing file count, total storage used, and number of participants in a room
+
+Planned advanced client-side encryption with AES-GCM using Web Workers (zero-knowledge)
+
+Responsive and professional UI/UX design with:
+
+Glassmorphism cards and blurred panels
+
+Multi-tone animated gradient backgrounds
+
+Smooth shadows and depth effects
+
+Premium typography with bold hero headlines and clean subtext
+
+Custom ChillDrop logo and favicon
+
+Dark and light mode toggle in navbar
+
+Landing page with modern hero section, animated background, feature grid with icons/illustrations, and “How It Works” timeline
+
+Room page layout with top bar, left panel for file uploads/list, right panel for chat
+
+Modals and forms with rounded corners, blur effects, and secure visuals
+
+Hover animations and interactive transitions on buttons and cards
+
+Smooth animations using Framer Motion for entrances, transitions, and interactions
+
+Accessibility support with ARIA labels, keyboard navigation, and proper focus states
+
+Footer with ChillDrop branding, Privacy, Terms, and Contact links
+
+Stretch features for future versions:
+
+File search and filtering inside rooms
+
+File versioning and history
+
+Persistent team workspaces
+
+Developer API access
+
+Advanced analytics and insights on usage

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Folder, Search, Download, Eye, Share, FileText, Image, Video, Archive } from "lucide-react";
+import { Folder, Search, Download, Eye, Share, FileText, Image, Video, Archive, DownloadCloud } from "lucide-react";
 import { getSignedUrl } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import type { File } from "@shared/schema";
@@ -20,6 +20,36 @@ export function FileList({ roomId, onShareFile }: FileListProps) {
     queryKey: ["/api/rooms", roomId, "files"],
     refetchInterval: 5000, // Refresh every 5 seconds
   });
+
+  const handleBulkDownload = async () => {
+    if (filteredFiles.length === 0) return;
+    
+    try {
+      for (const file of filteredFiles) {
+        const signedUrl = await getSignedUrl(file.storagePath);
+        const link = document.createElement('a');
+        link.href = signedUrl;
+        link.download = file.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Small delay between downloads to avoid overwhelming the browser
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      toast({
+        title: "Bulk Download Started",
+        description: `Downloading ${filteredFiles.length} files`,
+      });
+    } catch (error) {
+      toast({
+        title: "Bulk Download Failed",
+        description: "Failed to download some files",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filteredFiles = files.filter(file =>
     file.filename.toLowerCase().includes(searchQuery.toLowerCase())
@@ -133,6 +163,18 @@ export function FileList({ roomId, onShareFile }: FileListProps) {
           Files ({files.length})
         </h2>
         <div className="flex items-center gap-2">
+          {filteredFiles.length > 1 && (
+            <Button 
+              onClick={handleBulkDownload}
+              variant="ghost" 
+              size="sm" 
+              className="glass hover:bg-white/20 text-primary-500"
+              data-testid="button-bulk-download"
+            >
+              <DownloadCloud className="h-4 w-4 mr-1" />
+              Download All
+            </Button>
+          )}
           <Input
             type="text"
             placeholder="Search files..."
@@ -173,7 +215,7 @@ export function FileList({ roomId, onShareFile }: FileListProps) {
                         {file.filename}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {formatFileSize(file.fileSize)} • {formatTimeAgo(file.createdAt)} • Expires in {formatExpiresIn(file.expiresAt)}
+                        {formatFileSize(file.fileSize)} • {formatTimeAgo(file.createdAt.toString())} • Expires in {formatExpiresIn(file.expiresAt.toString())}
                       </p>
                     </div>
                   </div>

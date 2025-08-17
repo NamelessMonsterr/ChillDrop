@@ -1,8 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import QRCode from "qrcode";
 
 interface QRModalProps {
   open: boolean;
@@ -12,9 +13,23 @@ interface QRModalProps {
 
 export function QRModal({ open, onOpenChange, roomId }: QRModalProps) {
   const [copied, setCopied] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
   const { toast } = useToast();
   
   const roomUrl = `${window.location.origin}/room/${roomId}`;
+
+  useEffect(() => {
+    if (open && roomUrl) {
+      QRCode.toDataURL(roomUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(setQrCodeUrl).catch(console.error);
+    }
+  }, [open, roomUrl]);
 
   const copyToClipboard = async () => {
     try {
@@ -41,18 +56,26 @@ export function QRModal({ open, onOpenChange, roomId }: QRModalProps) {
           <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Share Room
           </DialogTitle>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
+          <DialogDescription className="text-gray-600 dark:text-gray-300 mb-6">
             Scan QR code or copy link to join this room
-          </p>
+          </DialogDescription>
         </DialogHeader>
         
         <div className="bg-white p-6 rounded-2xl mb-6 mx-auto w-fit">
           <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-            {/* QR code would be generated here using a library like qrcode */}
-            <div className="text-center">
-              <div className="text-6xl text-gray-400 mb-2">⬜</div>
-              <p className="text-xs text-gray-500">QR Code for {roomId}</p>
-            </div>
+            {qrCodeUrl ? (
+              <img 
+                src={qrCodeUrl} 
+                alt={`QR Code for room ${roomId}`}
+                className="w-full h-full object-contain"
+                data-testid="qr-code-image"
+              />
+            ) : (
+              <div className="text-center">
+                <div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-xs text-gray-500">Generating QR Code...</p>
+              </div>
+            )}
           </div>
         </div>
         
