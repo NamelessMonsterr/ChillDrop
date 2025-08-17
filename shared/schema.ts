@@ -35,6 +35,8 @@ export const messages = pgTable("messages", {
 export const insertRoomSchema = createInsertSchema(rooms).omit({
   id: true,
   createdAt: true,
+  expiresAt: true,
+  passwordHash: true,
 }).extend({
   password: z.string().optional(),
   expiryHours: z.enum(["1", "6", "12", "24"]),

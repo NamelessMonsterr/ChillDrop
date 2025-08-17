@@ -8,11 +8,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Room routes
   app.post("/api/rooms", async (req, res) => {
     try {
+      console.log("Received room data:", req.body);
       const roomData = insertRoomSchema.parse(req.body);
+      console.log("Parsed room data:", roomData);
       const room = await storage.createRoom(roomData);
       res.json(room);
     } catch (error) {
-      res.status(400).json({ error: "Invalid room data" });
+      console.error("Room creation error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid room data", details: error.errors });
+      } else {
+        res.status(400).json({ error: "Invalid room data" });
+      }
     }
   });
   
