@@ -1,0 +1,657 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChillDrop - Secure Temporary File Sharing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#5856eb',
+                            700: '#4f46e5',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'bounce-subtle': 'bounceSubtle 2s infinite',
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bounceSubtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glassmorphism {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .dark .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- @COMPONENT: App [main application wrapper with theme state] -->
+    <div id="app" class="min-h-screen gradient-bg">
+        
+        <!-- @COMPONENT: Navigation [top navigation bar] -->
+        <nav class="glassmorphism fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cloud-upload-alt text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            ChillDrop
+                        </span>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center space-x-8">
+                        <a href="#about" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About</a>
+                        <a href="#features" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Features</a>
+                        <a href="#contact" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact</a>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <button id="theme-toggle" class="p-2 rounded-lg glassmorphism hover:bg-white/20 dark:hover:bg-black/20 transition-colors" data-event="click:toggleTheme">
+                            <i class="fas fa-moon dark:hidden text-gray-700"></i>
+                            <i class="fas fa-sun hidden dark:block text-gray-300"></i>
+                        </button>
+                        <button class="md:hidden p-2 rounded-lg glassmorphism hover:bg-white/20 dark:hover:bg-black/20 transition-colors">
+                            <i class="fas fa-bars text-gray-700 dark:text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <!-- @END_COMPONENT: Navigation -->
+
+        <!-- @COMPONENT: HeroSection [main landing page hero] -->
+        <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto text-center">
+                <div class="animate-fade-in">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                        Share Files Securely,<br>
+                        <span class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                            Temporarily
+                        </span>
+                    </h1>
+                    <p class="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+                        Create private rooms for secure file sharing and real-time chat. Everything expires automatically. 
+                        Zero-knowledge encryption keeps your data private.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <button class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg" data-event="click:openCreateRoom">
+                            <i class="fas fa-plus mr-2"></i>
+                            Create Room
+                        </button>
+                        <button class="glassmorphism text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-all duration-300 border" data-event="click:openJoinRoom">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Join Room
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- @END_COMPONENT: HeroSection -->
+
+        <!-- @COMPONENT: FeaturesSection [showcase key features] -->
+        <section id="features" class="py-16 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-4 text-white">
+                        Why Choose ChillDrop?
+                    </h2>
+                    <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                        Built for privacy, designed for simplicity. Your data, your control.
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- @MAP: features.map(feature => ( -->
+                    <div class="glassmorphism rounded-2xl p-6 hover:bg-white/15 transition-all duration-300 animate-slide-up">
+                        <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                            <i class="fas fa-clock text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Auto-Expiry</h3>
+                        <p class="text-gray-300">
+                            Files and rooms automatically expire after your chosen duration. No manual cleanup needed.
+                        </p>
+                    </div>
+                    
+                    <div class="glassmorphism rounded-2xl p-6 hover:bg-white/15 transition-all duration-300 animate-slide-up">
+                        <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                            <i class="fas fa-lock text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Password Protected</h3>
+                        <p class="text-gray-300">
+                            Secure your rooms with optional passwords. Only invited users can access your content.
+                        </p>
+                    </div>
+                    
+                    <div class="glassmorphism rounded-2xl p-6 hover:bg-white/15 transition-all duration-300 animate-slide-up">
+                        <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                            <i class="fas fa-shield-alt text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Zero-Knowledge</h3>
+                        <p class="text-gray-300">
+                            End-to-end encryption ensures your files are encrypted before leaving your device.
+                        </p>
+                    </div>
+                    
+                    <div class="glassmorphism rounded-2xl p-6 hover:bg-white/15 transition-all duration-300 animate-slide-up">
+                        <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                            <i class="fas fa-comments text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Real-time Chat</h3>
+                        <p class="text-gray-300">
+                            Collaborate instantly with real-time messaging alongside your file sharing.
+                        </p>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+        </section>
+        <!-- @END_COMPONENT: FeaturesSection -->
+
+        <!-- @COMPONENT: HowItWorksSection [step-by-step process] -->
+        <section class="py-16 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-4 text-white">
+                        How It Works
+                    </h2>
+                    <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                        Get started in just a few simple steps
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- @MAP: steps.map((step, index) => ( -->
+                    <div class="text-center relative">
+                        <div class="glassmorphism rounded-2xl p-8 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl font-bold text-white">1</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-white">Create Room</h3>
+                            <p class="text-gray-300">
+                                Set up a new room with your preferred settings and expiry time.
+                            </p>
+                        </div>
+                        <!-- Connector line for desktop -->
+                        <div class="hidden lg:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-indigo-500 to-transparent"></div>
+                    </div>
+                    
+                    <div class="text-center relative">
+                        <div class="glassmorphism rounded-2xl p-8 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl font-bold text-white">2</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-white">Upload & Chat</h3>
+                            <p class="text-gray-300">
+                                Upload files and start chatting with room participants in real-time.
+                            </p>
+                        </div>
+                        <div class="hidden lg:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-indigo-500 to-transparent"></div>
+                    </div>
+                    
+                    <div class="text-center relative">
+                        <div class="glassmorphism rounded-2xl p-8 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl font-bold text-white">3</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-white">Share Link</h3>
+                            <p class="text-gray-300">
+                                Share the room link with others to give them access to files and chat.
+                            </p>
+                        </div>
+                        <div class="hidden lg:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-indigo-500 to-transparent"></div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="glassmorphism rounded-2xl p-8 mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl font-bold text-white">4</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-white">Auto-Expire</h3>
+                            <p class="text-gray-300">
+                                Everything automatically disappears when the timer expires. Clean and secure.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+        </section>
+        <!-- @END_COMPONENT: HowItWorksSection -->
+
+        <!-- @COMPONENT: Footer [site footer] -->
+        <footer class="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/10">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cloud-upload-alt text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                            ChillDrop
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center space-x-6 text-sm text-gray-400">
+                        <span>© 2025 ChillDrop</span>
+                        <a href="#privacy" class="hover:text-indigo-400 transition-colors">Privacy</a>
+                        <a href="#terms" class="hover:text-indigo-400 transition-colors">Terms</a>
+                        <a href="#contact" class="hover:text-indigo-400 transition-colors">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- @END_COMPONENT: Footer -->
+
+    </div>
+    <!-- @END_COMPONENT: App -->
+
+    <!-- @COMPONENT: CreateRoomModal [modal for creating new rooms] -->
+    <div id="create-room-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glassmorphism rounded-2xl p-8 w-full max-w-md mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Create Room</h2>
+                <button class="text-gray-400 hover:text-white transition-colors" data-event="click:closeCreateRoom">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form class="space-y-6" data-implementation="Handle room creation with Supabase">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Room Name</label>
+                    <input type="text" placeholder="Enter room name" class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" data-bind="room.name" data-mock="true">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Expires In</label>
+                    <select class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" data-bind="room.expiry" data-mock="true">
+                        <option value="1h">1 Hour</option>
+                        <option value="6h">6 Hours</option>
+                        <option value="12h">12 Hours</option>
+                        <option value="24h">24 Hours</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Password (Optional)</label>
+                    <input type="password" placeholder="Leave empty for no password" class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" data-bind="room.password" data-mock="true">
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105" data-event="click:createRoom">
+                    Create Room
+                </button>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: CreateRoomModal -->
+
+    <!-- @COMPONENT: JoinRoomModal [modal for joining existing rooms] -->
+    <div id="join-room-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glassmorphism rounded-2xl p-8 w-full max-w-md mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Join Room</h2>
+                <button class="text-gray-400 hover:text-white transition-colors" data-event="click:closeJoinRoom">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form class="space-y-6" data-implementation="Handle room joining with validation">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Room ID or URL</label>
+                    <input type="text" placeholder="Enter room ID or paste room URL" class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" data-bind="joinRoom.input" data-mock="true">
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105" data-event="click:joinRoom">
+                    Join Room
+                </button>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: JoinRoomModal -->
+
+    <!-- @COMPONENT: RoomPage [main room interface - hidden by default] -->
+    <div id="room-page" class="hidden min-h-screen gradient-bg">
+        <!-- Room Navigation -->
+        <nav class="glassmorphism fixed top-0 left-0 right-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <button class="text-gray-400 hover:text-white transition-colors" data-event="click:leaveRoom">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div>
+                            <h1 class="text-lg font-semibold text-white" data-bind="room.name">Project Files</h1>
+                            <p class="text-sm text-gray-400">
+                                <span data-bind="room.fileCount">3</span> files • Expires in 
+                                <span data-bind="room.timeRemaining" class="text-amber-400 font-medium">2h 34m</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <button class="glassmorphism px-4 py-2 rounded-lg text-white hover:bg-white/20 transition-colors" data-event="click:shareRoom">
+                            <i class="fas fa-share mr-2"></i>
+                            Share
+                        </button>
+                        <button class="p-2 rounded-lg glassmorphism hover:bg-white/20 transition-colors" data-event="click:toggleTheme">
+                            <i class="fas fa-moon dark:hidden text-gray-400"></i>
+                            <i class="fas fa-sun hidden dark:block text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="pt-20 pb-8 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid lg:grid-cols-3 gap-8">
+                    
+                    <!-- Files Section -->
+                    <div class="lg:col-span-2 space-y-6">
+                        
+                        <!-- Upload Zone -->
+                        <div class="glassmorphism rounded-2xl p-8">
+                            <h2 class="text-xl font-semibold text-white mb-6">Upload Files</h2>
+                            
+                            <div class="border-2 border-dashed border-indigo-400/50 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors cursor-pointer" data-implementation="Implement drag & drop file upload with progress tracking">
+                                <div class="animate-bounce-subtle">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-indigo-400 mb-4"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-white mb-2">Drag & drop files here</h3>
+                                <p class="text-gray-400 mb-4">or click to browse files</p>
+                                <p class="text-sm text-gray-500">Max 250MB per file</p>
+                                
+                                <!-- Upload Progress (hidden by default) -->
+                                <div class="hidden mt-6" id="upload-progress">
+                                    <div class="bg-gray-700 rounded-full h-2 mb-2">
+                                        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300" style="width: 65%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-sm text-gray-400">
+                                        <span>Uploading: document.pdf</span>
+                                        <span>65% • 2.1 MB/s • 30s remaining</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Files List -->
+                        <div class="glassmorphism rounded-2xl p-8">
+                            <h2 class="text-xl font-semibold text-white mb-6">Files</h2>
+                            
+                            <div class="space-y-4" data-implementation="Connect to Supabase files table with real-time updates">
+                                <!-- @MAP: files.map(file => ( -->
+                                <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file text-white"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-white" data-bind="file.name">presentation.pptx</p>
+                                            <p class="text-sm text-gray-400">
+                                                <span data-bind="file.size">2.4 MB</span> • 
+                                                <span data-bind="file.uploadedAt">2 minutes ago</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors" data-event="click:downloadFile" data-implementation="Generate signed URL for secure download">
+                                        <i class="fas fa-download mr-2"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-image text-white"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-white" data-bind="file.name">design-mockup.png</p>
+                                            <p class="text-sm text-gray-400">
+                                                <span data-bind="file.size">1.8 MB</span> • 
+                                                <span data-bind="file.uploadedAt">5 minutes ago</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors" data-event="click:downloadFile">
+                                        <i class="fas fa-download mr-2"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-archive text-white"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-white" data-bind="file.name">project-assets.zip</p>
+                                            <p class="text-sm text-gray-400">
+                                                <span data-bind="file.size">15.7 MB</span> • 
+                                                <span data-bind="file.uploadedAt">12 minutes ago</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors" data-event="click:downloadFile">
+                                        <i class="fas fa-download mr-2"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Section -->
+                    <div class="lg:col-span-1">
+                        <div class="glassmorphism rounded-2xl p-6 h-[600px] flex flex-col">
+                            <h2 class="text-xl font-semibold text-white mb-6">Chat</h2>
+                            
+                            <!-- Messages Container -->
+                            <div class="flex-1 overflow-y-auto space-y-4 mb-4" data-implementation="Connect to Supabase realtime for live chat updates">
+                                <!-- @MAP: messages.map(message => ( -->
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white text-sm font-medium" data-bind="message.sender.initial">A</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <span class="text-sm font-medium text-white" data-bind="message.sender.name">Alice</span>
+                                            <span class="text-xs text-gray-400" data-bind="message.timestamp">2:34 PM</span>
+                                        </div>
+                                        <p class="text-gray-300 text-sm" data-bind="message.content">Hey everyone! I just uploaded the latest design files. Take a look and let me know what you think.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white text-sm font-medium" data-bind="message.sender.initial">B</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <span class="text-sm font-medium text-white" data-bind="message.sender.name">Bob</span>
+                                            <span class="text-xs text-gray-400" data-bind="message.timestamp">2:36 PM</span>
+                                        </div>
+                                        <p class="text-gray-300 text-sm" data-bind="message.content">Looks great! The color scheme really works well. Should we schedule a call to discuss the next steps?</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white text-sm font-medium" data-bind="message.sender.initial">C</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <span class="text-sm font-medium text-white" data-bind="message.sender.name">Charlie</span>
+                                            <span class="text-xs text-gray-400" data-bind="message.timestamp">2:38 PM</span>
+                                        </div>
+                                        <p class="text-gray-300 text-sm" data-bind="message.content">Perfect timing! I just finished reviewing everything. The zip file has all the assets we need.</p>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                            
+                            <!-- Message Input -->
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Type a message..." class="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" data-bind="newMessage.content" data-mock="true">
+                                <button class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-3 rounded-xl transition-colors" data-event="click:sendMessage" data-implementation="Send message via Supabase realtime">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: RoomPage -->
+
+    <script>
+        (function() {
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or default to dark
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            html.classList.toggle('dark', currentTheme === 'dark');
+            
+            themeToggle?.addEventListener('click', () => {
+                const isDark = html.classList.contains('dark');
+                html.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            });
+
+            // Modal functionality
+            const createRoomModal = document.getElementById('create-room-modal');
+            const joinRoomModal = document.getElementById('join-room-modal');
+            const roomPage = document.getElementById('room-page');
+            const app = document.getElementById('app');
+
+            // Show create room modal
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('[data-event*="openCreateRoom"]')) {
+                    createRoomModal?.classList.remove('hidden');
+                }
+                if (e.target.closest('[data-event*="closeCreateRoom"]')) {
+                    createRoomModal?.classList.add('hidden');
+                }
+                if (e.target.closest('[data-event*="openJoinRoom"]')) {
+                    joinRoomModal?.classList.remove('hidden');
+                }
+                if (e.target.closest('[data-event*="closeJoinRoom"]')) {
+                    joinRoomModal?.classList.add('hidden');
+                }
+                
+                // TODO: Implement room creation logic with Supabase
+                if (e.target.closest('[data-event*="createRoom"]')) {
+                    e.preventDefault();
+                    // Simulate room creation and redirect to room page
+                    createRoomModal?.classList.add('hidden');
+                    app?.classList.add('hidden');
+                    roomPage?.classList.remove('hidden');
+                }
+                
+                // TODO: Implement room joining logic with validation
+                if (e.target.closest('[data-event*="joinRoom"]')) {
+                    e.preventDefault();
+                    // Simulate room joining
+                    joinRoomModal?.classList.add('hidden');
+                    app?.classList.add('hidden');
+                    roomPage?.classList.remove('hidden');
+                }
+                
+                if (e.target.closest('[data-event*="leaveRoom"]')) {
+                    roomPage?.classList.add('hidden');
+                    app?.classList.remove('hidden');
+                }
+            });
+
+            // Close modals when clicking outside
+            document.addEventListener('click', (e) => {
+                if (e.target === createRoomModal) {
+                    createRoomModal.classList.add('hidden');
+                }
+                if (e.target === joinRoomModal) {
+                    joinRoomModal.classList.add('hidden');
+                }
+            });
+
+            // TODO: Implement file upload drag & drop functionality
+            // TODO: Implement real-time chat with Supabase
+            // TODO: Implement file encryption/decryption with Web Crypto API
+            // TODO: Implement countdown timer for room expiry
+            // TODO: Implement file download with signed URLs
+            // TODO: Implement room sharing functionality
+            
+            // Smooth scrolling for anchor links
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href^="#"]');
+                if (link) {
+                    e.preventDefault();
+                    const target = document.querySelector(link.getAttribute('href'));
+                    target?.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+            // Add entrance animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationDelay = `${Math.random() * 0.3}s`;
+                        entry.target.classList.add('animate-slide-up');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.glassmorphism').forEach(el => {
+                observer.observe(el);
+            });
+        })();
+    </script>
+</body>
+</html>

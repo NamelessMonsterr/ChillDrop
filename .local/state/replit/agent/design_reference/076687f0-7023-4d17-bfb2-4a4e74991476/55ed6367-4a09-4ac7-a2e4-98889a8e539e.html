@@ -1,0 +1,842 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChillDrop - Secure File Sharing & Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#ecfdf5',
+                            500: '#059669',
+                            600: '#047857',
+                            700: '#065f46',
+                        },
+                        secondary: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'fade-in': 'fadeIn 0.6s ease-out',
+                    },
+                    backdropBlur: {
+                        'xs': '2px',
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(5, 150, 105, 0.3); }
+            to { box-shadow: 0 0 30px rgba(5, 150, 105, 0.6); }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-mesh {
+            background: linear-gradient(135deg, #059669 0%, #0891b2 25%, #f97316 50%, #fbbf24 75%, #059669 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chat-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .file-preview {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .upload-zone {
+            border: 2px dashed rgba(5, 150, 105, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: rgba(5, 150, 105, 0.6);
+            background: rgba(5, 150, 105, 0.05);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #059669, #0891b2);
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Dark mode styles */
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark .file-preview {
+            background: rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Background Gradient -->
+    <div class="fixed inset-0 gradient-mesh opacity-30 dark:opacity-20"></div>
+    <div class="fixed inset-0 bg-white/30 dark:bg-black/30"></div>
+    
+    <!-- Navigation -->
+    <nav class="relative z-50 glass rounded-2xl mx-4 mt-4">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <!-- Custom ChillDrop Logo -->
+                    <div class="relative">
+                        <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-cloud text-white text-lg"></i>
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400 rounded-full flex items-center justify-center">
+                                <i class="fas fa-drop-tint text-white text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent">ChillDrop</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-colors">Features</a>
+                    <a href="#how-it-works" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-colors">How It Works</a>
+                    <a href="#contact" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-colors">Contact</a>
+                    <button id="theme-toggle" class="p-2 rounded-lg glass hover:bg-white/20 transition-all">
+                        <i class="fas fa-moon dark:hidden text-gray-700"></i>
+                        <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+                    </button>
+                </div>
+                
+                <button class="md:hidden p-2 rounded-lg glass">
+                    <i class="fas fa-bars text-gray-700 dark:text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Landing Page -->
+    <div id="landing-page" class="relative z-10">
+        <!-- Hero Section -->
+        <section class="container mx-auto px-6 py-20">
+            <div class="text-center max-w-4xl mx-auto">
+                <h1 class="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-gray-900 via-primary-600 to-secondary-500 bg-clip-text text-transparent dark:from-white dark:via-primary-400 animate-fade-in">
+                    Share Files.<br>Chat Securely.<br>Auto-Delete.
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto animate-slide-up">
+                    Create temporary rooms for secure file sharing and real-time chat. Everything auto-expires when you're done. Zero knowledge, maximum privacy.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center animate-slide-up">
+                    <button id="create-room-btn" class="group relative px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl font-semibold text-lg hover-lift hover:animate-glow shadow-2xl">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Room
+                        <div class="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </button>
+                    <button id="join-room-btn" class="px-8 py-4 glass text-gray-700 dark:text-gray-300 rounded-2xl font-semibold text-lg hover-lift border-2 border-primary-500/30">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Join Room
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="container mx-auto px-6 py-20">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">Why Choose ChillDrop?</h2>
+                <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">Built for privacy, designed for simplicity. Share with confidence.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="glass rounded-3xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-clock text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white text-center">Auto-Expiry</h3>
+                    <p class="text-gray-600 dark:text-gray-300 text-center">Rooms and files automatically delete after 1h, 6h, 12h, or 24h. No traces left behind.</p>
+                </div>
+                
+                <div class="glass rounded-3xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-br from-secondary-500 to-red-500 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-shield-alt text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white text-center">Password Protection</h3>
+                    <p class="text-gray-600 dark:text-gray-300 text-center">Optional room passwords with bcrypt encryption for an extra layer of security.</p>
+                </div>
+                
+                <div class="glass rounded-3xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-lock text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white text-center">Zero Knowledge</h3>
+                    <p class="text-gray-600 dark:text-gray-300 text-center">Client-side encryption means your data is encrypted before it ever leaves your device.</p>
+                </div>
+                
+                <div class="glass rounded-3xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                        <i class="fas fa-comments text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white text-center">Real-time Chat</h3>
+                    <p class="text-gray-600 dark:text-gray-300 text-center">Instant messaging with typing indicators, emoji picker, and file sharing in chat.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section id="how-it-works" class="container mx-auto px-6 py-20">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">How It Works</h2>
+                <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">Simple steps for secure sharing</p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="grid md:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">1</div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white">Create Room</h3>
+                        <p class="text-gray-600 dark:text-gray-300">Set up a temporary room with custom expiry and optional password</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-secondary-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">2</div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white">Upload & Chat</h3>
+                        <p class="text-gray-600 dark:text-gray-300">Drag & drop files up to 250MB and chat in real-time with participants</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">3</div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white">Share Link</h3>
+                        <p class="text-gray-600 dark:text-gray-300">Send the room link or QR code to others for instant access</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">4</div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white">Auto-Delete</h3>
+                        <p class="text-gray-600 dark:text-gray-300">Everything automatically expires and deletes after the chosen time</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="glass mx-4 mb-4 rounded-2xl">
+            <div class="container mx-auto px-6 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cloud text-white text-sm"></i>
+                        </div>
+                        <span class="text-lg font-bold text-gray-900 dark:text-white">ChillDrop</span>
+                    </div>
+                    
+                    <div class="flex space-x-6 mb-4 md:mb-0">
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">Privacy</a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">Terms</a>
+                        <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">Contact</a>
+                    </div>
+                    
+                    <div class="text-gray-600 dark:text-gray-300">
+                        © 2025 ChillDrop. All rights reserved.
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Room Page (Initially Hidden) -->
+    <div id="room-page" class="hidden relative z-10 min-h-screen">
+        <!-- Room Header -->
+        <div class="container mx-auto px-6 py-6">
+            <div class="glass rounded-2xl p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex-1">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-home mr-2 text-primary-500"></i>
+                            <span data-bind="room.name">Project Alpha Room</span>
+                        </h1>
+                        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                            <span class="flex items-center">
+                                <i class="fas fa-clock mr-1 text-secondary-500"></i>
+                                Expires in <span data-bind="room.timeRemaining" class="font-semibold text-secondary-500 ml-1">2h 34m</span>
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-file mr-1 text-primary-500"></i>
+                                <span data-bind="room.fileCount">3</span> files
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-users mr-1 text-green-500"></i>
+                                <span data-bind="room.participantCount">4</span> active
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button id="share-link-btn" class="px-4 py-2 glass rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/20 transition-all">
+                            <i class="fas fa-link mr-2"></i>
+                            Copy Link
+                        </button>
+                        <button id="qr-code-btn" class="px-4 py-2 glass rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/20 transition-all">
+                            <i class="fas fa-qrcode mr-2"></i>
+                            QR Code
+                        </button>
+                        <button id="leave-room-btn" class="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Leave
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Room Content -->
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Files Section -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Upload Zone -->
+                    <div class="glass rounded-2xl p-6">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-cloud-upload-alt mr-2 text-primary-500"></i>
+                            Upload Files
+                        </h2>
+                        
+                        <div class="upload-zone rounded-xl p-8 text-center cursor-pointer">
+                            <div class="mb-4">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-primary-500 mb-4"></i>
+                                <p class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Drag & drop files here</p>
+                                <p class="text-gray-600 dark:text-gray-300">or click to browse</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Max 250MB per file</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Upload Progress (Hidden by default) -->
+                        <div id="upload-progress" class="hidden mt-4 space-y-3">
+                            <!-- @MAP: uploadQueue.map(upload => ( -->
+                            <div class="file-preview rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-gray-900 dark:text-white">document.pdf</span>
+                                    <span class="text-sm text-gray-500">2.4MB</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                                    <div class="progress-bar h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>65% complete</span>
+                                    <span>1.2 MB/s • 1s remaining</span>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                    
+                    <!-- Files List -->
+                    <div class="glass rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                                <i class="fas fa-folder mr-2 text-primary-500"></i>
+                                Files (<span data-bind="files.length">3</span>)
+                            </h2>
+                            <div class="flex items-center gap-2">
+                                <input type="text" placeholder="Search files..." class="px-3 py-1 glass rounded-lg text-sm">
+                                <button class="p-1 glass rounded-lg">
+                                    <i class="fas fa-search text-gray-500"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <!-- @MAP: files.map(file => ( -->
+                            <div class="file-preview rounded-xl p-4 hover:bg-white/10 transition-all group">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-pdf text-white"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">Project_Proposal.pdf</p>
+                                            <p class="text-sm text-gray-500">2.4MB • Uploaded 2h ago • Expires in 6h</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all" title="Preview">
+                                            <i class="fas fa-eye text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all" title="Download">
+                                            <i class="fas fa-download text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all" title="Share in chat">
+                                            <i class="fas fa-share text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="file-preview rounded-xl p-4 hover:bg-white/10 transition-all group">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-excel text-white"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">Budget_Q1.xlsx</p>
+                                            <p class="text-sm text-gray-500">1.8MB • Uploaded 1h ago • Expires in 7h</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all">
+                                            <i class="fas fa-eye text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all">
+                                            <i class="fas fa-download text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all">
+                                            <i class="fas fa-share text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="file-preview rounded-xl p-4 hover:bg-white/10 transition-all group">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <!-- Panoramic view of a modern office workspace with laptops and documents -->
+                                        <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=40&h=40" alt="Office workspace" class="w-10 h-10 rounded-lg object-cover" />
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">office_layout.jpg</p>
+                                            <p class="text-sm text-gray-500">5.2MB • Uploaded 30m ago • Expires in 7h 30m</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all">
+                                            <i class="fas fa-eye text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all">
+                                            <i class="fas fa-download text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                        <button class="p-2 glass rounded-lg hover:bg-white/20 transition-all">
+                                            <i class="fas fa-share text-gray-600 dark:text-gray-300"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Section -->
+                <div class="glass rounded-2xl p-6 h-fit lg:sticky lg:top-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                            <i class="fas fa-comments mr-2 text-primary-500"></i>
+                            Chat
+                        </h2>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                            4 online
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Messages -->
+                    <div class="h-96 overflow-y-auto mb-4 space-y-3 pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                        <!-- @MAP: messages.map(message => ( -->
+                        <div class="chat-bubble ml-auto">
+                            <div class="file-preview rounded-xl p-3 max-w-xs">
+                                <div class="flex items-center text-xs text-gray-500 mb-1">
+                                    <span class="font-medium">You</span>
+                                    <span class="ml-auto">2:34 PM</span>
+                                </div>
+                                <p class="text-gray-900 dark:text-white">Hey everyone! I've uploaded the project proposal. Take a look and let me know your thoughts.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-bubble">
+                            <div class="file-preview rounded-xl p-3 max-w-xs">
+                                <div class="flex items-center text-xs text-gray-500 mb-1">
+                                    <span class="font-medium">Sarah M.</span>
+                                    <span class="ml-auto">2:36 PM</span>
+                                </div>
+                                <p class="text-gray-900 dark:text-white">Perfect! I'll review it now. Thanks for sharing! 👍</p>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-bubble">
+                            <div class="file-preview rounded-xl p-3 max-w-xs">
+                                <div class="flex items-center text-xs text-gray-500 mb-1">
+                                    <span class="font-medium">Alex K.</span>
+                                    <span class="ml-auto">2:38 PM</span>
+                                </div>
+                                <p class="text-gray-900 dark:text-white">Great work! The budget breakdown in the Excel file looks comprehensive.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-bubble ml-auto">
+                            <div class="file-preview rounded-xl p-3 max-w-xs">
+                                <div class="flex items-center text-xs text-gray-500 mb-1">
+                                    <span class="font-medium">You</span>
+                                    <span class="ml-auto">2:40 PM</span>
+                                </div>
+                                <div class="file-preview rounded-lg p-2 mb-2 bg-primary-500/10 border border-primary-500/20">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fas fa-image text-primary-500"></i>
+                                        <span class="text-sm font-medium">office_layout.jpg</span>
+                                        <span class="text-xs text-gray-500">5.2MB</span>
+                                    </div>
+                                </div>
+                                <p class="text-gray-900 dark:text-white">Also uploaded the office layout photo for reference</p>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-bubble">
+                            <div class="file-preview rounded-xl p-3 max-w-xs">
+                                <div class="flex items-center text-xs text-gray-500 mb-1">
+                                    <span class="font-medium">Mike R.</span>
+                                    <span class="ml-auto text-green-500">
+                                        <i class="fas fa-circle text-xs"></i> typing...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex-1 glass rounded-xl p-3 flex items-center space-x-2">
+                                <input type="text" placeholder="Type your message..." class="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white">
+                                <button class="p-1 hover:bg-white/20 rounded transition-all">
+                                    <i class="fas fa-smile text-gray-500"></i>
+                                </button>
+                                <button class="p-1 hover:bg-white/20 rounded transition-all">
+                                    <i class="fas fa-paperclip text-gray-500"></i>
+                                </button>
+                            </div>
+                            <button class="p-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Create Room Modal -->
+    <div id="create-room-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl p-8 max-w-md w-full animate-slide-up">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create New Room</h2>
+                <p class="text-gray-600 dark:text-gray-300">Set up your temporary secure workspace</p>
+            </div>
+            
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Room Name</label>
+                    <input type="text" placeholder="e.g., Project Alpha" class="w-full px-4 py-3 glass rounded-xl border-none outline-none text-gray-900 dark:text-white">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expires After</label>
+                    <select class="w-full px-4 py-3 glass rounded-xl border-none outline-none text-gray-900 dark:text-white">
+                        <option>1 hour</option>
+                        <option>6 hours</option>
+                        <option selected>12 hours</option>
+                        <option>24 hours</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password (Optional)</label>
+                    <input type="password" placeholder="Leave empty for no password" class="w-full px-4 py-3 glass rounded-xl border-none outline-none text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancel-create" class="flex-1 px-4 py-3 glass rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/20 transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all">Create Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div id="join-room-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl p-8 max-w-md w-full animate-slide-up">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Join Room</h2>
+                <p class="text-gray-600 dark:text-gray-300">Enter room ID or paste the share link</p>
+            </div>
+            
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Room ID or Link</label>
+                    <input type="text" placeholder="abc123 or https://chilldrop.com/room/abc123" class="w-full px-4 py-3 glass rounded-xl border-none outline-none text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancel-join" class="flex-1 px-4 py-3 glass rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/20 transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all">Join Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl p-8 max-w-md w-full animate-slide-up text-center">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Share Room</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">Scan QR code to join this room</p>
+            
+            <div class="bg-white p-6 rounded-2xl mb-6 mx-auto w-fit">
+                <div class="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-qrcode text-6xl text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div class="glass rounded-xl p-4 mb-6">
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Room Link:</p>
+                <p class="text-sm font-mono text-gray-900 dark:text-white break-all">https://chilldrop.com/room/abc123def</p>
+            </div>
+            
+            <button id="close-qr" class="w-full px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all">Close</button>
+        </div>
+    </div>
+
+    <!-- Password Required Modal -->
+    <div id="password-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-3xl p-8 max-w-md w-full animate-slide-up">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-lock text-white text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Room is Protected</h2>
+                <p class="text-gray-600 dark:text-gray-300">This room requires a password to access</p>
+            </div>
+            
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                    <input type="password" placeholder="Enter room password" class="w-full px-4 py-3 glass rounded-xl border-none outline-none text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancel-password" class="flex-1 px-4 py-3 glass rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/20 transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all">Access Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management for all features
+        
+        (function() {
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or default to 'light'
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            html.classList.toggle('dark', savedTheme === 'dark');
+            
+            themeToggle.addEventListener('click', () => {
+                html.classList.toggle('dark');
+                const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+                localStorage.setItem('theme', currentTheme);
+            });
+            
+            // Modal management
+            const modals = {
+                createRoom: document.getElementById('create-room-modal'),
+                joinRoom: document.getElementById('join-room-modal'),
+                qrCode: document.getElementById('qr-modal'),
+                password: document.getElementById('password-modal')
+            };
+            
+            const pages = {
+                landing: document.getElementById('landing-page'),
+                room: document.getElementById('room-page')
+            };
+            
+            function showModal(modalName) {
+                modals[modalName]?.classList.remove('hidden');
+            }
+            
+            function hideModal(modalName) {
+                modals[modalName]?.classList.add('hidden');
+            }
+            
+            function showPage(pageName) {
+                Object.values(pages).forEach(page => page.classList.add('hidden'));
+                pages[pageName]?.classList.remove('hidden');
+            }
+            
+            // Button event listeners
+            document.getElementById('create-room-btn').addEventListener('click', () => {
+                showModal('createRoom');
+            });
+            
+            document.getElementById('join-room-btn').addEventListener('click', () => {
+                showModal('joinRoom');
+            });
+            
+            document.getElementById('qr-code-btn').addEventListener('click', () => {
+                showModal('qrCode');
+            });
+            
+            document.getElementById('share-link-btn').addEventListener('click', () => {
+                // TODO: Copy room link to clipboard
+                console.log('Copy link functionality');
+            });
+            
+            document.getElementById('leave-room-btn').addEventListener('click', () => {
+                showPage('landing');
+            });
+            
+            // Modal close buttons
+            document.getElementById('cancel-create').addEventListener('click', () => hideModal('createRoom'));
+            document.getElementById('cancel-join').addEventListener('click', () => hideModal('joinRoom'));
+            document.getElementById('close-qr').addEventListener('click', () => hideModal('qrCode'));
+            document.getElementById('cancel-password').addEventListener('click', () => hideModal('password'));
+            
+            // Form submissions
+            document.querySelector('#create-room-modal form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                // TODO: Implement room creation logic
+                hideModal('createRoom');
+                showPage('room');
+                console.log('Create room logic');
+            });
+            
+            document.querySelector('#join-room-modal form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                // TODO: Implement room joining logic
+                hideModal('joinRoom');
+                // Check if password required
+                showModal('password'); // For demo purposes
+                console.log('Join room logic');
+            });
+            
+            document.querySelector('#password-modal form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                // TODO: Implement password validation
+                hideModal('password');
+                showPage('room');
+                console.log('Password validation logic');
+            });
+            
+            // File upload simulation
+            const uploadZone = document.querySelector('.upload-zone');
+            const uploadProgress = document.getElementById('upload-progress');
+            
+            uploadZone.addEventListener('click', () => {
+                // TODO: Implement file selection
+                console.log('File selection logic');
+            });
+            
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('drag-over');
+            });
+            
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('drag-over');
+            });
+            
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('drag-over');
+                // TODO: Implement file upload logic
+                console.log('File drop logic');
+            });
+            
+            // Chat functionality simulation
+            const chatInput = document.querySelector('#room-page input[placeholder="Type your message..."]');
+            const sendButton = chatInput?.parentElement?.querySelector('button[class*="bg-gradient"]');
+            
+            sendButton?.addEventListener('click', () => {
+                // TODO: Implement message sending
+                console.log('Send message logic');
+            });
+            
+            chatInput?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    // TODO: Implement message sending
+                    console.log('Send message on Enter');
+                }
+            });
+            
+            // Close modals when clicking outside
+            Object.values(modals).forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Simulate real-time updates (for demo)
+            setInterval(() => {
+                // TODO: Implement real-time room data updates
+                // Update participant count, file list, chat messages, etc.
+            }, 5000);
+            
+        })();
+    </script>
+</body>
+</html>
